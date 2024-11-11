@@ -356,3 +356,34 @@ func (reg *Regexp) RepFileFunc(file *os.File, rep func(data func(int) []byte) []
 	}
 	return nil
 }
+
+// MatchFile returns true if a file contains a regex match
+func (reg *Regexp) MatchFile(file *os.File, maxReSize ...int64) bool {
+	l := int64(reg.len * 10)
+	if l < 1024 {
+		l = 1024
+	}
+	for _, maxRe := range maxReSize {
+		if l < maxRe {
+			l = maxRe
+		}
+	}
+
+	i := int64(0)
+
+	buf := make([]byte, l)
+	size, err := file.ReadAt(buf, i)
+	buf = buf[:size]
+	for err == nil {
+		if reg.Match(buf) {
+			return true
+		}
+
+		i++
+		buf = make([]byte, l)
+		size, err = file.ReadAt(buf, i)
+		buf = buf[:size]
+	}
+
+	return reg.Match(buf)
+}
